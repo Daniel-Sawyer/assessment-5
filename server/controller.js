@@ -21,31 +21,32 @@ module.exports = {
     },
 
     createCity: (req, res) => {
-        let {
-            name,
-            rating,
-            country_id
-        } = req.body
+        const {name,rating,countryId} = req.body
         sequelize.query(`
-        insert into cities (name, rating,country_id)
-        values (${name},${rating})
-        returning *;
-        
-        SELECT country_id
-        FROM countries
-        where country_id`)
+        INSERT INTO cities (name, rating, country_id)
+        VALUES ('${name}',${rating},${countryId})
+        `)
     
         .then(dbRes => res.status(200).send(dbRes[0]))
         .catch(err => console.log(err))
     },
     getCities: (req,res) => {
-        sequelize.query(`select a.name, a.rating from cities AS a;
-        SELECT * FROM countries AS c
-        JOIN cities AS a
-        ON c.country_id = a.country_id
+        sequelize.query(`select ci.city_id, ci.name AS city, ci.rating, co.country_id, co.name AS country
+        from cities ci 
+        JOIN countries co 
+        on co.country_id = ci.country_id
+        ORDER BY ci.rating DESC
         `)
         .then(dbRes => res.status(200).send(dbRes[0]))
         .catch(err => console.log(err))
+    },
+    deleteCity: (req, res) => {
+        const {id} = req.params
+        sequelize.query(`
+        DELETE FROM cities 
+        WHERE city_id = ${id}
+        `)
+        .then(dbRes => res.status(200).send(dbRes[0]))
     },
 
     seed: (req, res) => {
@@ -60,9 +61,9 @@ module.exports = {
 
             create table cities (
                 city_id serial primary key,
-                name varchar,
-                rating integer,
-                country_id integer references countries(country_id)
+                name varchar(100),
+                rating int,
+                country_id int not null references countries(country_id)
             );
 
             insert into countries (name)
@@ -261,6 +262,12 @@ module.exports = {
             ('Yemen'),
             ('Zambia'),
             ('Zimbabwe');
+
+            INSERT INTO cities (name, rating, country_id)
+            VALUES ('wera', 3, 2),
+            ('labamba', 2, 55),
+            ('lastone', 4, 187)
+
         `).then(() => {
             console.log('DB seeded!')
             res.sendStatus(200)
